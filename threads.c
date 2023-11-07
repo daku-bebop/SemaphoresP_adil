@@ -5,31 +5,31 @@
 #include "buffer.h"
 
 
-#define RAND_DIVISOR 100000000 //RANDOM divisor
-pthread_mutex_t mutex; // protection
-sem_t empty, full; 
+#define RAND_DIVISOR 324234 //RANDOM divisor
+pthread_mutex_t mutex; //
+sem_t empty, full; // empty to count num of empty slots in buffer. 
 
 buffer_item buffer[BUFFER_SIZE];
 //insert & remove 
 int in = 0, out = 0; //tracker
 int insert_item (buffer_item item){
-    //insert into buffer
-    if ((in + 1)% BUFFER_SIZE == out){
-        //full 
-        return -1; // failed to insert
+    if ((in + 1)% BUFFER_SIZE == out){   // check if full 
+        //full `
+        fprintf(stderr,"buffer is full\n"); 
+        return -1;                      // failed to insert
     }
-    buffer[in] = item; 
-    in = (in +1) % BUFFER_SIZE; 
+    buffer[in] = item;                  // insert item 
+    in = (in +1) % BUFFER_SIZE;         // inc and wrap 
     return 0; 
 }
 int remove_item(buffer_item *item){
-    //remove
     if(in == out){
         //buffer is empty
+        fprintf(stderr,"buffer is empty"); 
         return -1; 
     }
     *item = buffer[out]; 
-    out = (out +1)% BUFFER_SIZE; 
+    out = (out +1)% BUFFER_SIZE; //increment and wrap around
     return 0; 
 }
 
@@ -38,7 +38,7 @@ int remove_item(buffer_item *item){
 void *produce(void *param){
     buffer_item item; 
     while(1){
-        //sleep for rand pr of time
+        //sleep for rand pr of time in order to produce at random interval
         usleep(rand() / RAND_DIVISOR);
         //gen random number
         item = rand(); 
@@ -46,9 +46,9 @@ void *produce(void *param){
         sem_wait(&empty); 
         pthread_mutex_lock(&mutex); 
         if(insert_item(item)){
-            fprintf(stderr,"producer failure to insert");
+            fprintf(stderr,"producer failure to insert\n");
         }else{
-            fprintf("producer produced %d\n",item); 
+            printf("producer produced %d\n",item); 
         }
         pthread_mutex_unlock(&mutex); 
         sem_post(&full); 
@@ -62,7 +62,7 @@ void *consume(void *param){
         sem_wait(&full);
         pthread_mutex_lock(&mutex); 
         if(remove_item(&item)){
-            fprintf(stderr,"error: consumer failed to remove");
+            fprintf(stderr,"error: consumer failed to remove\n");
         }else{
             printf("consumer consumed %d\n",item); 
         }
