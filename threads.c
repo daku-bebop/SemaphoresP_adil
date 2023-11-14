@@ -32,8 +32,6 @@ int remove_item(buffer_item *item){
     out = (out +1)% BUFFER_SIZE; //increment and wrap around
     return 0; 
 }
-
-
 //producer th
 void *produce(void *param){
     buffer_item item; 
@@ -43,14 +41,16 @@ void *produce(void *param){
         //gen random number
         item = rand(); 
         //aquire sem 
-        sem_wait(&empty); 
+        sem_wait(&empty);                   //wait for empty spot
+        //protect critical 
         pthread_mutex_lock(&mutex); 
         if(insert_item(item)){
             fprintf(stderr,"producer failure to insert\n");
         }else{
             printf("producer produced %d\n",item); 
         }
-        pthread_mutex_unlock(&mutex); 
+        pthread_mutex_unlock(&mutex);       //unlock the mutex after exiting 
+                                            //item produced
         sem_post(&full); 
     }
 }
@@ -73,20 +73,20 @@ void *consume(void *param){
 int main(int argc, char *argv[]){
     int sleepTime, numP, numC, i; 
     if(argc !=4 ){
-        fprintf(stderr, "Usage: %s <sleep time> <# of producer threads> <# of consumer threads>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <sleep time> <# of producer threads> <# of consumer threads>\n", argv[0]);//checkcli
         return -1; 
     }
     sleepTime = atoi(argv[1]); 
-    numP = atoi(argv[2]); 
+    numP = atoi(argv[2]);       //convert arg string to ints
     numC = atoi(argv[3]); 
-    pthread_mutex_init(&mutex,NULL); // create mutex lock
+    pthread_mutex_init(&mutex,NULL); 
     //INIT semaphores
     sem_init(&empty, 0, BUFFER_SIZE); //empty
     sem_init(&full, 0, 0); // full consume// items for consumption
     //create threads
     pthread_t producers[numP]; 
     pthread_t consumers[numC];
-    
+    //start routine
     for(i = 0; i < numP; i++){
         pthread_create(&producers[i], NULL, produce, NULL); 
     }
